@@ -3,6 +3,11 @@
   "id": "StatsChart",
   "thumbnailURL": "",
   "configs": {
+    "pubsub": {
+      "types": [
+        "subscriber"
+      ]
+    },
     "providerConfig": {
       "configs" : {
         "type": "SiddhiStoreDataProvider",
