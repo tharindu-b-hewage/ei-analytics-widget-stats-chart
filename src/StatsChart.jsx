@@ -3,34 +3,35 @@ import Widget from '@wso2-dashboards/widget';
 import VizG from 'react-vizgrammar';
 import moment from 'moment';
 
-var PAGE_PROXY = 'proxy';
-var PAGE_OVERVIEW = 'overview';
-var PAGE_API = 'api';
-var PAGE_SEQUENCE = 'sequence';
-var TENANT_ID = '-1234';
-var PAGE_ENDPOINT = 'endpoint';
-var PAGE_INBOUND_ENDPOINT = 'inboundEndpoint';
-var PAGE_MEDIATOR = 'mediator';
-var PUBLISHER_DATE_TIME_PICKER = "granularity";
-var PUBLISHER_SEARCH_BOX = "selectedComponent";
+const PAGE_PROXY = 'proxy';
+const PAGE_OVERVIEW = 'overview';
+const PAGE_API = 'api';
+const PAGE_SEQUENCE = 'sequence';
+const TENANT_ID = '-1234';
+const PAGE_ENDPOINT = 'endpoint';
+const PAGE_INBOUND_ENDPOINT = 'inboundEndpoint';
+const PAGE_MEDIATOR = 'mediator';
+const PUBLISHER_DATE_TIME_PICKER = "granularity";
+const PUBLISHER_SEARCH_BOX = "selectedComponent";
 
 // console.log(JSON.stringify(this.bodyRef.current.parentNode.getAttribute("height")));
 
 class StatsChart extends Widget {
     constructor(props) {
         super(props);
+
         this.state = {
             page: null,
             componentName: null,
-            entryPoint: null, // todo: Find out what this is for
+            entryPoint: null,
             timeFrom: null,
             timeTo: null,
             timeUnit: null,
             totalCount: null,
-            faultCount: null
+            faultCount: null,
+            width: this.props.glContainer.width,
+            height: this.props.glContainer.height
         };
-
-        // this.graphSideLength = {width: 200, height: 200};
 
         this.extractStatsData = this.extractStats.bind(this);
 
@@ -49,7 +50,8 @@ class StatsChart extends Widget {
             ],
             percentage: true,
             width: 100,
-            height: 100
+            height: 100,
+            "animate": true
         };
 
         this.faultChartConfig = {
@@ -66,33 +68,48 @@ class StatsChart extends Widget {
             ],
             percentage: true,
             width: 100,
-            height: 100
+            height: 100,
+            "animate": true
         };
 
         this.metadata = {
             "names": ["rpm", "torque", "horsepower", "EngineType"],
             "types": ["linear", "linear", "ordinal", "ordinal"]
         };
+
+        this.props.glContainer.on('resize', this.handleResize.bind(this));
+
+        this.setWidgetTitle();
     }
 
-    // setGraphSideLength() {
-    //     let style = this.domElementBody.current.parentElement.getAttribute('style');
-    //     let styleAttributes = style.split(';');
-    //     let dimensions = [];
-    //     let width, height;
-    //     styleAttributes.forEach((value) => {
-    //         if (value.includes('width')) {
-    //             width = parseInt(value.match(/\d+/)[0]);
-    //         }
-    //         else if (value.includes('height')) {
-    //             height = parseInt(value.match(/\d+/)[0]);
-    //         }
-    //     });
-    //     this.graphSideLength = {width: width, height: height};
-    // }
+    handleResize() {
+        this.setState({width: this.props.glContainer.width, height: this.props.glContainer.height});
+    }
+
+    setWidgetTitle() {
+        let currentUrl = window.location.href;
+        let pageNameStartIndex = currentUrl.lastIndexOf('/');
+        let pageNameEndIndex = currentUrl.indexOf('?');
+        let pageName = (pageNameEndIndex === -1) ?
+            currentUrl.substring(pageNameStartIndex + 1) : currentUrl.substring(pageNameStartIndex + 1, pageNameEndIndex);
+        let title = 'StatChart';
+
+        if (pageName === 'overview') {
+            title = 'REQUEST SUMMARY';
+        }
+        else {
+            title = pageName.toUpperCase() + "  REQUEST COUNT";
+        }
+
+        this.props.glContainer.setTitle(
+            title
+        );
+    }
 
     componentDidMount() {
-        this.setState({page: this.getCurrentPage()}, this.handleParameterChange);
+        this.setState({
+            page: this.getCurrentPage()
+        }, this.handleParameterChange);
 
         let queryString = this.getQueryString();
         // If window url contains entryPoint, store it in the state
@@ -128,20 +145,20 @@ class StatsChart extends Widget {
                             this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
                         break;
                     case PAGE_SEQUENCE:
-                        this.state.entryPoint != null ? this.extractStatsData(PAGE_SEQUENCE, this.state.componentName,
-                            this.state.entryPoint, TENANT_ID, "MediatorStat", this.state.timeFrom, this.state.timeTo, this.state.timeUnit) : null;
+                        this.extractStatsData(PAGE_SEQUENCE, this.state.componentName,
+                            this.state.entryPoint, TENANT_ID, "MediatorStat", this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
                         break;
                     case PAGE_ENDPOINT:
-                        this.state.entryPoint != null ? this.extractStatsData(PAGE_ENDPOINT, this.state.componentName,
-                            this.state.entryPoint, TENANT_ID, "MediatorStat", this.state.timeFrom, this.state.timeTo, this.state.timeUnit) : null;
+                        this.extractStatsData(PAGE_ENDPOINT, this.state.componentName,
+                            this.state.entryPoint, TENANT_ID, "MediatorStat", this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
                         break;
                     case PAGE_INBOUND_ENDPOINT:
                         this.extractStatsData(PAGE_INBOUND_ENDPOINT, this.state.componentName, null, TENANT_ID, "ESBStat",
                             this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
                         break;
                     case PAGE_MEDIATOR:
-                        this.state.entryPoint != null ? this.extractStatsData(PAGE_MEDIATOR, this.state.componentName,
-                            this.state.entryPoint, TENANT_ID, "MediatorStat", this.state.timeFrom, this.state.timeTo, this.state.timeUnit) : null;
+                        this.extractStatsData(PAGE_MEDIATOR, this.state.componentName,
+                            this.state.entryPoint, TENANT_ID, "MediatorStat", this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
                         break;
                 }
             }
@@ -149,7 +166,6 @@ class StatsChart extends Widget {
     }
 
     handleRecievedMessage(recievedMessage) {
-        //console.log(JSON.stringify(recievedMessage));
         let message;
         if (typeof recievedMessage == "string") {
             message = JSON.parse(recievedMessage);
@@ -162,12 +178,16 @@ class StatsChart extends Widget {
             this.setState({
                 timeFrom: moment(message.from).format("YYYY-MM-DD HH:mm:ss"),
                 timeTo: moment(message.to).format("YYYY-MM-DD HH:mm:ss"),
-                timeUnit: message.granularity + 's'
+                timeUnit: message.granularity + 's',
+                totalCount: null,
+                faultCount: null
             }, this.handleParameterChange);
         }
         if (PUBLISHER_SEARCH_BOX in message) {
             this.setState({
-                componentName: message.selectedComponent
+                componentName: message.selectedComponent,
+                totalCount: null,
+                faultCount: null
             }, this.handleParameterChange);
         }
     }
@@ -284,9 +304,14 @@ class StatsChart extends Widget {
             <div id={"charts"} style={{float: 'left', height: '100%', minHeight: '100%', width: '80%'}}>
                 <div style={{float: 'left', textAlign: 'center', height: '100%', minHeight: '100%', width: '50%'}}>
                     <div style={{float: 'bottom', height: '60%', width: '100%'}}>
-                        <VizG config={this.successChartConfig} metadata={this.metadata} data={[[
-                            9000, ((this.state.totalCount - this.state.faultCount) * 100) / this.state.totalCount, 130, "Rotary"]]}>
-                        </VizG>
+                        <VizG
+                            config={this.successChartConfig}
+                            metadata={this.metadata}
+                            data={[[
+                                9000, ((this.state.totalCount - this.state.faultCount) * 100) / this.state.totalCount, 130, "Rotary"
+                            ]]}
+                            theme={this.props.muiTheme.name}
+                        />
                     </div>
                     <div style={{float: 'top', height: '40%', width: '100%'}}>
                         <h5>Success Rate</h5>
@@ -295,8 +320,14 @@ class StatsChart extends Widget {
                 </div>
                 <div style={{float: 'left', textAlign: 'center', height: '100%', minHeight: '100%', width: '50%'}}>
                     <div style={{float: 'bottom', height: '60%', width: '100%'}}>
-                        <VizG config={this.faultChartConfig} metadata={this.metadata} data={[[
-                            9000, ((this.state.faultCount) * 100) / this.state.totalCount, 130, "Rotary"]]}/>
+                        <VizG
+                            config={this.faultChartConfig}
+                            metadata={this.metadata}
+                            data={[[
+                                9000, ((this.state.faultCount) * 100) / this.state.totalCount, 130, "Rotary"
+                            ]]}
+                            theme={this.props.muiTheme.name}
+                        />
                     </div>
                     <div style={{float: 'top', height: '40%', width: '100%'}}>
                         <h5>Failure Rate</h5>
@@ -309,7 +340,7 @@ class StatsChart extends Widget {
     }
 
     isDataRecieved() {
-        return this.state.totalCount != null && this.state.componentName != null;
+        return this.state.totalCount != null;
     }
 
     noParameters() {
