@@ -9,7 +9,7 @@ const PAGE_API = 'api';
 const PAGE_SEQUENCE = 'sequence';
 const TENANT_ID = '-1234';
 const PAGE_ENDPOINT = 'endpoint';
-const PAGE_INBOUND_ENDPOINT = 'inboundEndpoint';
+const PAGE_INBOUND_ENDPOINT = 'inbound';
 const PAGE_MEDIATOR = 'mediator';
 const PUBLISHER_DATE_TIME_PICKER = "granularity";
 const PUBLISHER_SEARCH_BOX = "selectedComponent";
@@ -118,7 +118,7 @@ class StatsChart extends Widget {
                 entryPoint: queryString.entryPoint
             }, this.handleParameterChange);
         }
-        //this.extractStatsData("ALL", "ALL", null, -1234, "ESBStat");
+        //this.extractStatsData("ALL", "ALL", null, -1234, "ESBStatAgg");
     }
 
     componentWillMount() {
@@ -132,33 +132,33 @@ class StatsChart extends Widget {
                 /*
                 componentType, componentName, entryPoint, tenantId, aggregator
                  */
-                this.extractStatsData("ALL", "ALL", null, -1234, "ESBStat", this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
+                this.extractStatsData("ALL", "ALL", null, -1234, "ESBStatAgg", this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
             }
             else if (this.state.componentName != null) {
                 switch (pageName) {
                     case PAGE_PROXY:
-                        this.extractStatsData(PAGE_PROXY, this.state.componentName, null, TENANT_ID, "ESBStat",
+                        this.extractStatsData(PAGE_PROXY, this.state.componentName, null, TENANT_ID, "ESBStatAgg",
                             this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
                         break;
                     case PAGE_API:
-                        this.extractStatsData(PAGE_API, this.state.componentName, null, TENANT_ID, "ESBStat",
+                        this.extractStatsData(PAGE_API, this.state.componentName, null, TENANT_ID, "ESBStatAgg",
                             this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
                         break;
                     case PAGE_SEQUENCE:
                         this.extractStatsData(PAGE_SEQUENCE, this.state.componentName,
-                            this.state.entryPoint, TENANT_ID, "MediatorStat", this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
+                            this.state.entryPoint, TENANT_ID, "MediatorStatAgg", this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
                         break;
                     case PAGE_ENDPOINT:
                         this.extractStatsData(PAGE_ENDPOINT, this.state.componentName,
-                            this.state.entryPoint, TENANT_ID, "MediatorStat", this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
+                            this.state.entryPoint, TENANT_ID, "MediatorStatAgg", this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
                         break;
                     case PAGE_INBOUND_ENDPOINT:
-                        this.extractStatsData(PAGE_INBOUND_ENDPOINT, this.state.componentName, null, TENANT_ID, "ESBStat",
+                        this.extractStatsData(PAGE_INBOUND_ENDPOINT, this.state.componentName, null, TENANT_ID, "ESBStatAggAgg",
                             this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
                         break;
                     case PAGE_MEDIATOR:
                         this.extractStatsData(PAGE_MEDIATOR, this.state.componentName,
-                            this.state.entryPoint, TENANT_ID, "MediatorStat", this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
+                            this.state.entryPoint, TENANT_ID, "MediatorStatAgg", this.state.timeFrom, this.state.timeTo, this.state.timeUnit);
                         break;
                 }
             }
@@ -196,7 +196,7 @@ class StatsChart extends Widget {
      * Get message count details from the DB  and set the state accordingly
      */
     extractStats(componentType, componentName, entryPoint, tenantId, aggregator, timeFrom, timeTo, timeUnit) {
-        if (componentType == "Mediator" || componentType == "ALL") {
+        if (componentType == PAGE_MEDIATOR || componentType == "ALL") {
             var componentIdentifier = "componentId";
         } else {
             var componentIdentifier = "componentName";
@@ -233,7 +233,7 @@ class StatsChart extends Widget {
                     delete dataProviderConf.configs.providerConfig.configs.config.queryData.nullEntryPointStatPerQuery;
                     delete dataProviderConf.configs.providerConfig.configs.config.queryData.notNullEntryPointStatPerQuery;
                 }
-                //console.log(JSON.stringify(dataProviderConf.configs.providerConfig));
+                // console.log(JSON.stringify(dataProviderConf.configs.providerConfig));
                 super.getWidgetChannelManager()
                     .subscribeWidget(this.props.id, this.handleStats().bind(this), dataProviderConf.configs.providerConfig);
             })
@@ -249,6 +249,7 @@ class StatsChart extends Widget {
      */
     handleStats() {
         return function (stats) {
+            console.log(stats);
             let metadata = stats.metadata.names;
             let data = stats.data[0];
             let dataIndex = {};
